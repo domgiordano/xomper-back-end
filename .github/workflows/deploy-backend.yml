@@ -1,0 +1,121 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -t lambdas/common
+
+      - name: Package Lambda functions
+        run: |
+          cd lambdas/authorizer
+          zip -r ../../authorizer.zip *
+          cd ../update_player_data
+          zip -r ../../update-player-data.zip *
+          cd ../get_player_data
+          zip -r ../../get-player-data.zip *
+          cd ../..
+          cd ../..
+          mkdir -p python/lambdas
+          cp -r lambdas/common python/lambdas/
+          python3.10 -m pip install --platform manylinux2014_x86_64 --only-binary=:all: -t python/ -r requirements.txt
+          zip -r xomper-shared-packages.zip python
+
+      - name: Deploy Lambda Layer
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'us-east-1'
+        run: |
+          LAYER_OUTPUT=$(aws lambda publish-layer-version \
+            --layer-name xomper-shared-packages \
+            --zip-file fileb://xomper-shared-packages.zip \
+            --compatible-runtimes python3.10 \
+            --region $AWS_REGION \
+            --output json)
+
+          echo "LAYER_ARN=$(echo $LAYER_OUTPUT | jq -r .LayerVersionArn)" >> $GITHUB_ENV
+          echo "Layer ARN: $LAYER_ARN"
+
+      - name: Deploy Authroizer Lambda Function Code
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'us-east-1'
+        run: |
+          aws lambda update-function-code \
+            --function-name xomper-authorizer \
+            --zip-file fileb://authorizer.zip
+          sleep 5
+
+      - name: Deploy Authorizer Lambda Configurations
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'us-east-1'
+          LAYER_ARN: ${{ env.LAYER_ARN }}
+        run: |
+          aws lambda update-function-configuration \
+            --function-name xomper-authorizer \
+            --layers $LAYER_ARN \
+            --region $AWS_REGION
+
+      - name: Deploy Update Player Data Lambda Function Code
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'us-east-1'
+        run: |
+          aws lambda update-function-code \
+            --function-name xomper-update-player-data \
+            --zip-file fileb://update-player-data.zip
+          sleep 5
+
+      - name: Deploy Update Player Data Lambda Configurations
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'us-east-1'
+          LAYER_ARN: ${{ env.LAYER_ARN }}
+        run: |
+          aws lambda update-function-configuration \
+            --function-name xomper-update-player-data \
+            --layers $LAYER_ARN \
+            --region $AWS_REGION
+
+      - name: Deploy Get Player Data Lambda Function Code
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'us-east-1'
+        run: |
+          aws lambda update-function-code \
+            --function-name xomper-get-player-data \
+            --zip-file fileb://get-player-data.zip
+          sleep 5
+
+      - name: Deploy Get Player Data Lambda Configurations
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'us-east-1'
+          LAYER_ARN: ${{ env.LAYER_ARN }}
+        run: |
+          aws lambda update-function-configuration \
+            --function-name xomper-get-player-data \
+            --layers $LAYER_ARN \
+            --region $AWS_REGION
