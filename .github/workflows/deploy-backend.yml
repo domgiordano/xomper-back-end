@@ -29,7 +29,6 @@ jobs:
           cd ../get_player_data
           zip -r ../../get-player-data.zip *
           cd ../..
-          cd ../..
           mkdir -p python/lambdas
           cp -r lambdas/common python/lambdas/
           python3.10 -m pip install --platform manylinux2014_x86_64 --only-binary=:all: -t python/ -r requirements.txt
