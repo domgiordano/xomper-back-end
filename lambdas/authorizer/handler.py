@@ -35,10 +35,10 @@ def decode_auth_token(auth_token):
         # decode using system environ $SECRET_KEY, will crash if not set.
         return jwt.decode(auth_token, API_SECRET_KEY, algorithms=['HS256'])
     except jwt.ExpiredSignatureError:
-        'Signature expired. Please log in again.'
+        log.warning('Signature expired. Please log in again.')
         return
     except jwt.InvalidTokenError:
-        'Invalid token. Please log in again.'
+        log.warning('Invalid token. Please log in again.')
         return
 
 def handler(event, context):

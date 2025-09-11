@@ -3,7 +3,6 @@ import datetime
 import decimal
 import json
 import logging
-import os
 from urllib3.connection import HTTPConnection
 import base64
 
