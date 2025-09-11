@@ -7,7 +7,7 @@ from player_data import get_player_data
 
 log = LOGGER.get_logger(__file__)
 
-HANDLER = 'release-radar'
+HANDLER = 'player-data'
 
 
 def handler(event, context):
@@ -25,14 +25,14 @@ def handler(event, context):
             log.info(f'Path called: {path} \nWith method: {http_method}')
 
             # Get Existing Player Data
-            if (path == f"/{HANDLER}/data") and (http_method == 'GET'):
+            if (path == f"/{HANDLER}") and (http_method == 'GET'):
 
                 query_string_parameters = event.get("queryStringParameters")
 
-                if not validate_input(query_string_parameters, {'player_id'}):
+                if not validate_input(query_string_parameters, {'playerId'}):
                     raise Exception("Invalid User Input - missing required field or contains extra field.")
 
-                response = get_player_data(query_string_parameters['player_id'])
+                response = get_player_data(query_string_parameters['playerId'])
 
         if response is None:
             raise Exception("Invalid Call.", 400)
