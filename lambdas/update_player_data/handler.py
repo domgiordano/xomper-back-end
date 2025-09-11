@@ -7,7 +7,7 @@ from lambdas.common.constants import LOGGER
 
 log = LOGGER.get_logger(__file__)
 
-HANDLER = 'release-radar'
+HANDLER = 'player/data'
 
 
 def handler(event, context):
