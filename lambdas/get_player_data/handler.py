@@ -32,7 +32,7 @@ def handler(event, context):
                 if not validate_input(query_string_parameters, {'playerId'}):
                     raise Exception("Invalid User Input - missing required field or contains extra field.")
 
-                response = get_player_data(query_string_parameters['playerId'])
+                response = asyncio.run(get_player_data(query_string_parameters['playerId']))
 
         if response is None:
             raise Exception("Invalid Call.", 400)
