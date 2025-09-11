@@ -8,10 +8,7 @@ PRODUCT = 'xomper'
 
 # Headers
 RESPONSE_HEADERS = {
-    "Access-Control-Allow-Origin": "https://xomper.com",
-    "Access-Control-Allow-Headers": "Authorization,Content-Type",
-    "Access-Control-Allow-Methods": "GET,OPTIONS",
-    "Access-Control-Allow-Credentials": "true",
+    "Access-Control-Allow-Origin": "*",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
     "Content-Type": "application/json"
 }
