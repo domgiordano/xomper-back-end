@@ -13,7 +13,7 @@ HANDLER = 'player/data'
 def handler(event, context):
     try:
 
-        # Monthly Wrapped Chron Job
+        # Player Data Weekly Chron Job
         if 'body' not in event and event.get("source") == 'aws.events':
             response =asyncio.run(player_data_chron_job())
             return build_successful_handler_response({"message": response}, False)

@@ -145,6 +145,28 @@ def get_item_by_key(table_name, id_key, id_val):
     except Exception as err:
         log.error(f"Dynamodb Table Get Item By Key: {err}")
         raise Exception(f"Dynamodb Table Get Item By Key: {err}")
+    
+def get_item_by_multiple_keys(table_name: str, id_partition_key: str, id_partition_val: str, id_sort_key: str, id_sort_val: str):
+    try:
+
+        table = dynamodb_res.Table(table_name)
+        response = table.get_item(
+            Key={
+                id_partition_key: id_partition_val,
+                id_sort_key: id_sort_val            
+            }
+        )
+
+        item = response.get('Item')
+        if item:
+            log.info("Item Found in table.")
+            return response['Item']
+        else:
+            log.warning(f"Invalid IDs ({id_partition_key} - {id_sort_key}): Item Does not Exist.")
+            return {}
+    except Exception as err:
+        log.error(f"Dynamodb Table Get Item By Multipe Keys: {err}")
+        raise Exception(f"Dynamodb Table Get Item By Multipe Keys: {err}")
 
 def query_table_by_key(table_name, id_key, id_val, ascending=False):
     try:
