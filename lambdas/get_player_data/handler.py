@@ -1,6 +1,6 @@
 import asyncio
 import traceback
-from lambdas.common.utility_helpers import build_successful_handler_response, build_error_handler_response, is_called_from_api, validate_input
+from lambdas.common.utility_helpers import build_successful_handler_response, build_error_handler_response, is_called_from_api, validate_dict
 from lambdas.common.errors import PlayerDataError
 from lambdas.common.constants import LOGGER
 from player_data import get_player_data
@@ -29,7 +29,7 @@ def handler(event, context):
 
                 query_string_parameters = event.get("queryStringParameters")
 
-                if not validate_input(query_string_parameters, {'playerId'}):
+                if not validate_dict(query_string_parameters, {'playerId'}):
                     raise Exception("Invalid User Input - missing required field or contains extra field.")
 
                 response = asyncio.run(get_player_data(query_string_parameters['playerId']))

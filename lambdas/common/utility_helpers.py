@@ -7,7 +7,9 @@ from urllib3.connection import HTTPConnection
 import base64
 
 # Used to ensure we dump our JSON out with a decimal decoder, so that it gets logged okay if a decimal.
-from lambdas.common.constants import RESPONSE_HEADERS
+from lambdas.common.constants import RESPONSE_HEADERS, LOGGER
+
+log = LOGGER.get_logger(__file__)
 
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -118,8 +120,34 @@ def format_date(raw_date):
     date = datetime.datetime(int(date_mdy[2]), int(date_mdy[0]), int(date_mdy[1]))
     return date
 
-def validate_input(input, required_fields={}, optional_fields={}):
+def validate_dict(input, required_fields={}, optional_fields={}):
     if input is None and not required_fields and not optional_fields:
         return True
     allowed_fields = set(required_fields) | set(optional_fields)
     return required_fields <= set(input.keys()) <= allowed_fields
+
+def validate_dict(data: dict, required_fields: dict = {}, optional_fields: dict = {}):
+    try:
+        data_keys = data.keys()
+        all_fields = set(required_fields) | set(optional_fields)
+
+        # Missing Req Fields
+        if required_fields - data_keys:
+            log.error("Invalid API Call - Missing Required Fields")
+            raise Exception("Invalid Call: Missing Required Fields.")
+        
+        # Check for blank values
+        for field in required_fields:
+            if not data[field]:
+                log.error(f"Invalid API Call - Required field {field} has a blank value")
+                raise Exception(f"Invalid Call: Required field {field} cannot be empty.")
+            
+        # Additional Fields
+        if data_keys - all_fields:
+            log.error(f"Invalid API Call - Extra Fields")
+            raise Exception(f"Invalid Call: Extra Fields")
+        
+        log.info("Valid API fields.")
+    except Exception as err:
+        log.error(f"Validate Dict: {err}")
+        raise Exception(f"Validate Dict: {err}") from err
