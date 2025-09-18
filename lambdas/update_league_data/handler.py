@@ -3,12 +3,11 @@ import traceback
 from lambdas.common.utility_helpers import build_successful_handler_response, build_error_handler_response, is_called_from_api, validate_input
 from lambdas.common.errors import LeagueDataError
 from lambdas.common.constants import LOGGER
+from league_data import update_league_data
 
 log = LOGGER.get_logger(__file__)
 
 HANDLER = 'league/data'
-
-REQUIRED_QUERY_PARAMS = ['userId', 'leagueId', 'password']
 
 def handler(event, context):
     try:
@@ -27,10 +26,11 @@ def handler(event, context):
             # Get Existing Player Data
             if (path == f"/{HANDLER}") and (http_method == 'POST'):
 
-                ## TODO: Add logic
-                log.info("Updating League data.")
+                if not validate_input(body, {'leagueId'}):
+                    raise Exception("Invalid User Input - missing required field or contains extra field.")
                 
-
+                response = update_league_data(body['leagueId'])
+                
         if response is None:
             raise Exception("Invalid Call.", 400)
         else:
