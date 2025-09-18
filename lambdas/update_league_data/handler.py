@@ -1,4 +1,5 @@
 import json
+import asyncio
 import traceback
 from lambdas.common.utility_helpers import build_successful_handler_response, build_error_handler_response, is_called_from_api, validate_dict
 from lambdas.common.errors import LeagueDataError
@@ -27,7 +28,7 @@ def handler(event, context):
 
                 validate_dict(body, {'leagueId'})
                 
-                response = update_league_data(body['leagueId'])
+                response = asyncio.run(update_league_data(body['leagueId']))
                 
         if response is None:
             raise Exception("Invalid Call.", 400)

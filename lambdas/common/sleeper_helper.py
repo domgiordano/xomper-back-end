@@ -21,7 +21,7 @@ def fetch_nfl_players():
     
 def get_sleeper_user(user_id: str):
     try:
-        url = f"{SLEEPER_URL_BASE}/user/${user_id}"
+        url = f"{SLEEPER_URL_BASE}/user/{user_id}"
         response = requests.get(url)
 
         if response.status_code == 200:
@@ -35,7 +35,7 @@ def get_sleeper_user(user_id: str):
     
 async def get_sleeper_league(league_id: str):
     try:
-        url = f"{SLEEPER_URL_BASE}/league/${league_id}"
+        url = f"{SLEEPER_URL_BASE}/league/{league_id}"
         response = requests.get(url)
 
         if response.status_code == 200:
@@ -49,7 +49,7 @@ async def get_sleeper_league(league_id: str):
     
 async def get_sleeper_league_rosters(league_id: str):
     try:
-        url = f"{SLEEPER_URL_BASE}/league/${league_id}/rosters"
+        url = f"{SLEEPER_URL_BASE}/league/{league_id}/rosters"
         response = requests.get(url)
 
         if response.status_code == 200:
@@ -63,7 +63,7 @@ async def get_sleeper_league_rosters(league_id: str):
     
 async def get_sleeper_league_users(league_id: str):
     try:
-        url = f"{SLEEPER_URL_BASE}/league/${league_id}/users"
+        url = f"{SLEEPER_URL_BASE}/league/{league_id}/users"
         response = requests.get(url)
 
         if response.status_code == 200:
