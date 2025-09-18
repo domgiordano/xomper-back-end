@@ -1,4 +1,4 @@
-import asyncio
+
 from lambdas.common.constants import LOGGER, LEAGUE_DATA_TABLE_NAME
 
 from lambdas.common.sleeper_helper import get_sleeper_league
@@ -6,7 +6,7 @@ from lambdas.common.dynamo_helpers import update_table_item
 
 log = LOGGER.get_logger(__file__)
 
-async def update_league_data(league_id: str) -> dict:
+def update_league_data(league_id: str) -> dict:
     try:
         sleeper_league = get_sleeper_league(league_id)
         update_table_item(LEAGUE_DATA_TABLE_NAME, sleeper_league)

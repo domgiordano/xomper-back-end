@@ -18,10 +18,9 @@ def handler(event, context):
         is_api = is_called_from_api(event)
 
         path = event.get("path").lower()
-        body = json.loads(event.get("body"))
+        body = json.loads(event.get("body")) if type(event.get("body")) == str else event.get("body")
         http_method = event.get("httpMethod", "POST")
         response = None
-        event_auth = event['headers']['Authorization']
 
         if path:
             log.info(f'Path called: {path} \nWith method: {http_method}')

@@ -1,4 +1,4 @@
-import asyncio
+
 from lambdas.common.constants import LOGGER, USER_DATA_TABLE_NAME
 
 from lambdas.common.sleeper_helper import get_sleeper_user
@@ -6,7 +6,7 @@ from lambdas.common.dynamo_helpers import update_table_item
 
 log = LOGGER.get_logger(__file__)
 
-async def update_user_data(user_id: str) -> dict:
+def update_user_data(user_id: str) -> dict:
     try:
         sleeper_user = get_sleeper_user(user_id)
         update_table_item(USER_DATA_TABLE_NAME, sleeper_user)
