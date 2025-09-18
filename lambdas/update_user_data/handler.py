@@ -1,7 +1,7 @@
 import asyncio
 import traceback
 from lambdas.common.utility_helpers import build_successful_handler_response, build_error_handler_response, is_called_from_api, validate_input
-from lambdas.common.errors import PlayerDataError
+from lambdas.common.errors import UserDataError
 from lambdas.common.constants import LOGGER
 
 log = LOGGER.get_logger(__file__)
@@ -42,5 +42,5 @@ def handler(event, context):
         if len(err.args) > 1:
             function = err.args[1]
         log.error(traceback.print_exc())
-        error = PlayerDataError(message, HANDLER, function) if 'Invalid User Input' not in message else PlayerDataError(message, HANDLER, function, 400)
+        error = UserDataError(message, HANDLER, function) if 'Invalid User Input' not in message else UserDataError(message, HANDLER, function, 400)
         return build_error_handler_response(str(error))
