@@ -28,8 +28,7 @@ def handler(event, context):
                 
                 query_string_parameters = event.get("queryStringParameters")
 
-                if not validate_dict(query_string_parameters, {'leagueId'}):
-                    raise Exception("Invalid User Input - missing required field or contains extra field.")
+                validate_dict(query_string_parameters, {'leagueId'})
                 
                 league, league_users, league_rosters = asyncio.run(get_league_data(query_string_parameters['leagueId']))
                 log.info("Sleeper league found and loaded.")

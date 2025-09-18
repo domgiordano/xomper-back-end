@@ -26,8 +26,7 @@ def handler(event, context):
             # Get Existing Player Data
             if (path == f"/{HANDLER}") and (http_method == 'POST'):
 
-                if not validate_dict(body, {'userId'}):
-                    raise Exception("Invalid User Input - missing required field or contains extra field.")
+                validate_dict(body, {'userId'})
                 
                 response = update_user_data(body['userId'])
                 

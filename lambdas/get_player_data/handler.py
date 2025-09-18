@@ -29,9 +29,8 @@ def handler(event, context):
 
                 query_string_parameters = event.get("queryStringParameters")
 
-                if not validate_dict(query_string_parameters, {'playerId'}):
-                    raise Exception("Invalid User Input - missing required field or contains extra field.")
-
+                validate_dict(query_string_parameters, {'playerId'})
+                    
                 response = asyncio.run(get_player_data(query_string_parameters['playerId']))
 
         if response is None:
