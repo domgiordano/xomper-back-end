@@ -10,7 +10,7 @@ async def login_user(data: dict) -> dict:
     try:
         # Get Vals
         user_id = data['userId']
-        league_id = data['league_id']
+        league_id = data['leagueId']
         password = data['password']
         user = get_item_by_key(USER_DATA_TABLE_NAME, 'user_id', user_id)
         if not user:
