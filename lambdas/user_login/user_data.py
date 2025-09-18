@@ -18,9 +18,9 @@ async def login_user(data: dict) -> dict:
             return {}
         elif user['password'] == password:
             log.info("User password matches. Validating user in Sleeper League.")
-            sleeper_user = await get_sleeper_user(user_id)
+            sleeper_user = get_sleeper_user(user_id)
             league = get_item_by_key(LEAGUE_DATA_TABLE_NAME, 'league_id', league_id)
-            if sleeper_user['id'] in league['user_ids']:
+            if sleeper_user['user_id'] in league['user_ids']:
                 log.info("User is in league. Login Successful.")
                 return sleeper_user
             else:
