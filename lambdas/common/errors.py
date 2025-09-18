@@ -39,3 +39,11 @@ class PlayerDataError(BaseXomperException):
     def __init__(self, error, handler, function, status=500, base="💥 Error in Xomper Player Data 💥"):
         super().__init__(error, handler, function, status, base)
 
+class UserDataError(BaseXomperException):
+    def __init__(self, error, handler, function, status=500, base="💥 Error in Xomper User Data 💥"):
+        super().__init__(error, handler, function, status, base)
+
+class LeagueDataError(BaseXomperException):
+    def __init__(self, error, handler, function, status=500, base="💥 Error in Xomper League Data 💥"):
+        super().__init__(error, handler, function, status, base)
+

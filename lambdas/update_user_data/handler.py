@@ -1,14 +1,13 @@
 import asyncio
 import traceback
 from lambdas.common.utility_helpers import build_successful_handler_response, build_error_handler_response, is_called_from_api, validate_input
-from lambdas.common.errors import PlayerDataError
+from lambdas.common.errors import UserDataError
 from lambdas.common.constants import LOGGER
+from user_data import update_user_data
 
 log = LOGGER.get_logger(__file__)
 
 HANDLER = 'user/data'
-
-REQUIRED_QUERY_PARAMS = ['userId', 'leagueId', 'password']
 
 def handler(event, context):
     try:
@@ -27,10 +26,11 @@ def handler(event, context):
             # Get Existing Player Data
             if (path == f"/{HANDLER}") and (http_method == 'POST'):
 
-                ## TODO: Add logic
-                log.info("Updating user data.")
+                if not validate_input(body, {'userId'}):
+                    raise Exception("Invalid User Input - missing required field or contains extra field.")
                 
-
+                response = update_user_data(body['userId'])
+                
         if response is None:
             raise Exception("Invalid Call.", 400)
         else:
@@ -42,5 +42,5 @@ def handler(event, context):
         if len(err.args) > 1:
             function = err.args[1]
         log.error(traceback.print_exc())
-        error = PlayerDataError(message, HANDLER, function) if 'Invalid User Input' not in message else PlayerDataError(message, HANDLER, function, 400)
+        error = UserDataError(message, HANDLER, function) if 'Invalid User Input' not in message else UserDataError(message, HANDLER, function, 400)
         return build_error_handler_response(str(error))
