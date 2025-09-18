@@ -1,13 +1,15 @@
 import asyncio
 import traceback
 from lambdas.common.utility_helpers import build_successful_handler_response, build_error_handler_response, is_called_from_api, validate_input
-from lambdas.common.errors import UserDataError
+from lambdas.common.errors import PlayerDataError
 from lambdas.common.constants import LOGGER
-from user_data import get_user_data
+from user_data import login_user
 
 log = LOGGER.get_logger(__file__)
 
-HANDLER = 'user/data'
+HANDLER = 'user/login'
+
+REQUIRED_QUERY_PARAMS = ['userId', 'leagueId', 'password']
 
 def handler(event, context):
     try:
@@ -23,16 +25,14 @@ def handler(event, context):
         if path:
             log.info(f'Path called: {path} \nWith method: {http_method}')
 
-            # Get Existing user Data
-            if (path == f"/{HANDLER}") and (http_method == 'GET'):
-                
-                query_string_parameters = event.get("queryStringParameters")
+            # Get Existing Player Data
+            if (path == f"/{HANDLER}") and (http_method == 'POST'):
 
-                if not validate_input(query_string_parameters, {'userId'}):
+                if not validate_input(body, REQUIRED_QUERY_PARAMS):
                     raise Exception("Invalid User Input - missing required field or contains extra field.")
                 
-                response = asyncio.run(get_user_data(query_string_parameters['userId']))
-                log.info("Sleeper user found and loaded.")
+                response = asyncio.run(login_user(body))
+                log.info("Sleeper user found and logged in.")
                 
 
         if response is None:
@@ -46,5 +46,5 @@ def handler(event, context):
         if len(err.args) > 1:
             function = err.args[1]
         log.error(traceback.print_exc())
-        error = UserDataError(message, HANDLER, function) if 'Invalid User Input' not in message else UserDataError(message, HANDLER, function, 400)
+        error = PlayerDataError(message, HANDLER, function) if 'Invalid User Input' not in message else PlayerDataError(message, HANDLER, function, 400)
         return build_error_handler_response(str(error))
