@@ -120,12 +120,6 @@ def format_date(raw_date):
     date = datetime.datetime(int(date_mdy[2]), int(date_mdy[0]), int(date_mdy[1]))
     return date
 
-def validate_dict(input, required_fields={}, optional_fields={}):
-    if input is None and not required_fields and not optional_fields:
-        return True
-    allowed_fields = set(required_fields) | set(optional_fields)
-    return required_fields <= set(input.keys()) <= allowed_fields
-
 def validate_dict(data: dict, required_fields: dict = {}, optional_fields: dict = {}):
     try:
         data_keys = data.keys()

@@ -29,9 +29,8 @@ def handler(event, context):
             # Get Existing Player Data
             if (path == f"/{HANDLER}") and (http_method == 'POST'):
 
-                if not validate_dict(body, REQUIRED_FIELDS):
-                    raise Exception("Invalid User Input - missing required field or contains extra field.")
-                
+                validate_dict(body, REQUIRED_FIELDS)
+
                 response = asyncio.run(login_user(body))
                 log.info("Sleeper user found and logged in.")
                 
