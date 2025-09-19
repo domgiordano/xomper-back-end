@@ -8,7 +8,7 @@ from user_data import login_user
 
 log = LOGGER.get_logger(__file__)
 
-HANDLER = 'user/login'
+HANDLER = 'login'
 
 REQUIRED_FIELDS = ['userId', 'leagueId', 'password']
 

@@ -7,7 +7,7 @@ from lambdas.get_league_data.league_data import get_league_data
 
 log = LOGGER.get_logger(__file__)
 
-HANDLER = 'league/data'
+HANDLER = 'league'
 
 def handler(event, context):
     try:

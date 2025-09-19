@@ -7,7 +7,7 @@ from player_data import get_player_data
 
 log = LOGGER.get_logger(__file__)
 
-HANDLER = 'player/data'
+HANDLER = 'player'
 
 
 def handler(event, context):

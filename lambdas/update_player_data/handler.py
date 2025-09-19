@@ -7,7 +7,7 @@ from lambdas.common.constants import LOGGER
 
 log = LOGGER.get_logger(__file__)
 
-HANDLER = 'player/data'
+HANDLER = 'player'
 
 
 def handler(event, context):

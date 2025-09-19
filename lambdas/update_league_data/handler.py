@@ -8,7 +8,7 @@ from league_data import update_league_data
 
 log = LOGGER.get_logger(__file__)
 
-HANDLER = 'league/data'
+HANDLER = 'league'
 
 def handler(event, context):
     try:
