@@ -7,7 +7,7 @@ from urllib3.connection import HTTPConnection
 import base64
 
 # Used to ensure we dump our JSON out with a decimal decoder, so that it gets logged okay if a decimal.
-from lambdas.common.constants import RESPONSE_HEADERS, LOGGER
+from lambdas.common.constants import RESPONSE_HEADERS, LOGGER, ALLOWED_ORIGINS
 
 log = LOGGER.get_logger(__file__)
 
@@ -30,33 +30,38 @@ def extract_body_from_event(event, is_api):
         return event.get('body')
 
 
-def build_successful_handler_response(body_object, is_api):
-    """This function that should be invoked in the except block of customer facing _handler functions
-    Returns a successful _handler call."""
+def get_cors_headers(origin: str):
+    allowed_origin = origin if origin in ALLOWED_ORIGINS else "null"
+    return {
+        "Access-Control-Allow-Origin": allowed_origin,
+        "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+        "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+        "Access-Control-Allow-Credentials": "true",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+        "Content-Type": "application/json"
+    }
+
+def build_successful_handler_response(req_headers: dict, body_object: dict, is_api: bool = True):
+    origin = req_headers.get("origin", "")
+    headers = get_cors_headers(origin)
     return {
         'statusCode': 200,
-        'headers': RESPONSE_HEADERS,
+        'headers': headers,
         'body': json.dumps(body_object, cls=DecimalEncoder) if is_api else body_object,
         "isBase64Encoded": False
     }
 
 
-def build_error_handler_response(error, is_api=True):
-    """This function that should be invoked in the except block of customer facing _handler functions.
-    Returns a generic error response with a string in the "message" property of the actual error.
-    The calling application should examine response body for an 'error' property at root of it.  If that is present,
-    then the body would also contain a 'message' property from which you can grab the message text to shown to the
-    customer-facing web user, if the handler is to be used by customer apps.  Customer-facing handlers should pass
-    in constants.GENERIC_CUSTOMER_FACING_ERROR_MSG as the 'friendly_error_msg'.
-    Otherwise, build_successful__handler_response should be invoked as the last statement in the try block of the
-    calling _handler function."""
+def build_error_handler_response(req_headers: dict, error, is_api: bool = True):
+    origin = req_headers.get("origin", "")
+    headers = get_cors_headers(origin)
     error_dict = json.loads(error)
     status = error_dict['status']
     del error_dict['status']
     body_object = {"error": error_dict}
     return {
         'statusCode': status,
-        'headers': RESPONSE_HEADERS,
+        'headers': headers,
         'body': json.dumps(body_object, cls=DecimalEncoder) if is_api else body_object,
         "isBase64Encoded": False
     }

@@ -7,11 +7,10 @@ AWS_ACCOUNT_ID = os.environ['AWS_ACCOUNT_ID']
 PRODUCT = 'xomper'
 
 # Headers
-RESPONSE_HEADERS = {
-    #"Access-Control-Allow-Origin": "*",
-    "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
-    "Content-Type": "application/json"
-}
+ALLOWED_ORIGINS = [
+    "https://xomper.com",
+    "http://localhost:4200"
+]
 
 # Logging
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()

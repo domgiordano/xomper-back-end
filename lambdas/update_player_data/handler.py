@@ -28,4 +28,4 @@ def handler(event, context):
             function = err.args[1]
         log.error(traceback.print_exc())
         error = PlayerDataError(message, HANDLER, function) if 'Invalid User Input' not in message else PlayerDataError(message, HANDLER, function, 400)
-        return build_error_handler_response(str(error))
+        return build_error_handler_response({}, str(error))
