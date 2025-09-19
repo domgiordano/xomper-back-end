@@ -7,7 +7,7 @@ from urllib3.connection import HTTPConnection
 import base64
 
 # Used to ensure we dump our JSON out with a decimal decoder, so that it gets logged okay if a decimal.
-from lambdas.common.constants import RESPONSE_HEADERS, LOGGER, ALLOWED_ORIGINS
+from lambdas.common.constants import LOGGER, ALLOWED_ORIGINS
 
 log = LOGGER.get_logger(__file__)
 
