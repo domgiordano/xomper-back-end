@@ -7,7 +7,7 @@ from user_data import get_user_data
 
 log = LOGGER.get_logger(__file__)
 
-HANDLER = 'user'
+HANDLER = 'user/data'
 
 def handler(event, context):
     try:
