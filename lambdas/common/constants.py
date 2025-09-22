@@ -9,6 +9,9 @@ PRODUCT = 'xomper'
 # Headers
 RESPONSE_HEADERS = {
     "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Authorization,Content-Type,X-Amz-Date,X-Api-Key,X-Amz-Security-Token",  
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    "Access-Control-Allow-Credentials": "true",  # if sending cookies or auth headers
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
     "Content-Type": "application/json"
 }
