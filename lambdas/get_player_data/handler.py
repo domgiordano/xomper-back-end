@@ -1,6 +1,6 @@
 import asyncio
 import traceback
-from lambdas.common.utility_helpers import build_successful_handler_response, build_error_handler_response, is_called_from_api, validate_dict
+from lambdas.common.utility_helpers import send_proxy_response, validate_dict
 from lambdas.common.errors import PlayerDataError
 from lambdas.common.constants import LOGGER
 from player_data import get_player_data
@@ -8,12 +8,11 @@ from player_data import get_player_data
 log = LOGGER.get_logger(__file__)
 
 HANDLER = 'player/data'
+BASE_MSG = "Get Player Data"
 
 
 def handler(event, context):
     try:
-
-        is_api = is_called_from_api(event)
 
         path = event.get("path").lower()
         http_method = event.get("httpMethod", "POST")
@@ -34,7 +33,7 @@ def handler(event, context):
         if response is None:
             raise Exception("Invalid Call.", 400)
         else:
-            return build_successful_handler_response(response, is_api)
+            return send_proxy_response(True, 200, f"{BASE_MSG} Success.", response)
 
     except Exception as err:
         message = err.args[0]
@@ -43,4 +42,4 @@ def handler(event, context):
             function = err.args[1]
         log.error(traceback.print_exc())
         error = PlayerDataError(message, HANDLER, function) if 'Invalid User Input' not in message else PlayerDataError(message, HANDLER, function, 400)
-        return build_error_handler_response(str(error))
+        return send_proxy_response(False, error.status, f"{BASE_MSG} Failure.", error.message)

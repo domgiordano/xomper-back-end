@@ -1,7 +1,7 @@
 import asyncio
 import json
 import traceback
-from lambdas.common.utility_helpers import build_successful_handler_response, build_error_handler_response, is_called_from_api, validate_dict
+from lambdas.common.utility_helpers import send_proxy_response, validate_dict
 from lambdas.common.errors import UserDataError
 from lambdas.common.constants import LOGGER
 from user_data import login_user
@@ -9,13 +9,12 @@ from user_data import login_user
 log = LOGGER.get_logger(__file__)
 
 HANDLER = 'user/login'
+BASE_MSG = "User Login"
 
 REQUIRED_FIELDS = ['userId', 'leagueId', 'password']
 
 def handler(event, context):
     try:
-
-        is_api = is_called_from_api(event)
 
         path = event.get("path").lower()
         body = json.loads(event.get("body")) if type(event.get("body")) == str else event.get("body")
@@ -37,7 +36,7 @@ def handler(event, context):
         if response is None:
             raise Exception("Invalid Call.", 400)
         else:
-            return build_successful_handler_response(response, is_api)
+            return send_proxy_response(True, 200, f"{BASE_MSG} Success.", response)
 
     except Exception as err:
         message = err.args[0]
@@ -46,4 +45,4 @@ def handler(event, context):
             function = err.args[1]
         log.error(traceback.print_exc())
         error = UserDataError(message, HANDLER, function) if 'Invalid User Input' not in message else UserDataError(message, HANDLER, function, 400)
-        return build_error_handler_response(str(error))
+        return send_proxy_response(False, error.status, f"{BASE_MSG} Failure.", error.message)

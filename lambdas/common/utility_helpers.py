@@ -50,6 +50,20 @@ def build_error_handler_response(error, is_api: bool = True):
         "isBase64Encoded": False
     }
 
+def send_proxy_response(success, response_code, message, response_data = {}):
+    body = json.dumps({
+        'Success': success,
+        'Message': message,
+        'ResponseData': json.loads(json.dumps(response_data, default=str))
+    })
+    if response_code < 200:
+        response_code = 400
+
+    return {
+        "statusCode": 200 if success else response_code,
+        "headers": RESPONSE_HEADERS,
+        "body": body
+    }
 
 def set_response(statusCode, body):
     return {
