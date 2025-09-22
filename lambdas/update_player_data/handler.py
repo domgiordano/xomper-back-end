@@ -1,6 +1,6 @@
 import asyncio
 import traceback
-from lambdas.common.utility_helpers import build_successful_handler_response, build_error_handler_response
+from lambdas.common.utility_helpers import send_proxy_response
 from lambdas.common.errors import PlayerDataError
 from player_data import player_data_chron_job
 from lambdas.common.constants import LOGGER
@@ -8,7 +8,7 @@ from lambdas.common.constants import LOGGER
 log = LOGGER.get_logger(__file__)
 
 HANDLER = 'player/update'
-
+BASE_MSG = "Update Player Data"
 
 def handler(event, context):
     try:
@@ -16,7 +16,7 @@ def handler(event, context):
         # Player Data Weekly Chron Job
         if 'body' not in event and event.get("source") == 'aws.events':
             response =asyncio.run(player_data_chron_job())
-            return build_successful_handler_response({"message": response}, False)
+            return send_proxy_response(True, 200, f"{BASE_MSG} Success.", response)
 
         else:
             raise Exception("Invalid Call: Must call from chron job.", 400)
@@ -28,4 +28,4 @@ def handler(event, context):
             function = err.args[1]
         log.error(traceback.print_exc())
         error = PlayerDataError(message, HANDLER, function) if 'Invalid User Input' not in message else PlayerDataError(message, HANDLER, function, 400)
-        return build_error_handler_response(str(error))
+        return send_proxy_response(False, error.status, f"{BASE_MSG} Failure.", error.message)
