@@ -13,28 +13,22 @@ BASE_MSG = "Get User Data"
 def handler(event, context):
     try:
 
-        is_api = is_called_from_api(event)
-
         path = event.get("path").lower()
         http_method = event.get("httpMethod", "POST")
         response = None
 
-        if path:
-            log.info(f'Path called: {path} \nWith method: {http_method}')
+        log.info(f'Path called: {path} \nWith method: {http_method}')
+            
+        query_string_parameters = event.get("queryStringParameters")
 
-            # Get Existing user Data
-            if (path == f"/{HANDLER}") and (http_method == 'GET'):
-                
-                query_string_parameters = event.get("queryStringParameters")
-
-                validate_dict(query_string_parameters, {'userId'})
-                
-                response = asyncio.run(get_user_data(query_string_parameters['userId']))
-                log.info("Sleeper user found and loaded.")
+        validate_dict(query_string_parameters, {'userId'})
+        
+        response = asyncio.run(get_user_data(query_string_parameters['userId']))
+        log.info("Sleeper user found and loaded.")
                 
 
         if response is None:
-            raise Exception("Invalid Call.", 400)
+            raise Exception(f"{BASE_MSG} Unexepected Error.")
         else:
             return send_proxy_response(True, 200, f"{BASE_MSG} Success.", response)
 

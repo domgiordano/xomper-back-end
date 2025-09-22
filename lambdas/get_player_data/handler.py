@@ -18,20 +18,17 @@ def handler(event, context):
         http_method = event.get("httpMethod", "POST")
         response = None
 
-        if path:
-            log.info(f'Path called: {path} \nWith method: {http_method}')
+        log.info(f'Path called: {path} \nWith method: {http_method}')
 
-            # Get Existing Player Data
-            if (path == f"/{HANDLER}") and (http_method == 'GET'):
 
-                query_string_parameters = event.get("queryStringParameters")
+        query_string_parameters = event.get("queryStringParameters")
 
-                validate_dict(query_string_parameters, {'playerId'})
-                    
-                response = asyncio.run(get_player_data(query_string_parameters['playerId']))
+        validate_dict(query_string_parameters, {'playerId'})
+            
+        response = asyncio.run(get_player_data(query_string_parameters['playerId']))
 
         if response is None:
-            raise Exception("Invalid Call.", 400)
+            raise Exception(f"{BASE_MSG} Unexepected Error.")
         else:
             return send_proxy_response(True, 200, f"{BASE_MSG} Success.", response)
 

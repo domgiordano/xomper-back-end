@@ -19,18 +19,14 @@ def handler(event, context):
         http_method = event.get("httpMethod", "POST")
         response = None
 
-        if path:
-            log.info(f'Path called: {path} \nWith method: {http_method}')
-
-            # Get Existing Player Data
-            if (path == f"/{HANDLER}") and (http_method == 'POST'):
-
-                validate_dict(body, {'userId'})
-                
-                response = asyncio.run(update_user_data(body['userId']))
+        log.info(f'Path called: {path} \nWith method: {http_method}')
+        
+        validate_dict(body, {'userId'})
+        
+        response = asyncio.run(update_user_data(body['userId']))
                 
         if response is None:
-            raise Exception("Invalid Call.", 400)
+            raise Exception(f"{BASE_MSG} Unexepected Error.")
         else:
             return send_proxy_response(True, 200, f"{BASE_MSG} Success.", response)
 
