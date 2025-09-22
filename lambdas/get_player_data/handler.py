@@ -16,7 +16,6 @@ def handler(event, context):
         is_api = is_called_from_api(event)
 
         path = event.get("path").lower()
-        headers = event.get("headers", {})
         http_method = event.get("httpMethod", "POST")
         response = None
 
@@ -35,7 +34,7 @@ def handler(event, context):
         if response is None:
             raise Exception("Invalid Call.", 400)
         else:
-            return build_successful_handler_response(headers, response, is_api)
+            return build_successful_handler_response(response, is_api)
 
     except Exception as err:
         message = err.args[0]
@@ -44,4 +43,4 @@ def handler(event, context):
             function = err.args[1]
         log.error(traceback.print_exc())
         error = PlayerDataError(message, HANDLER, function) if 'Invalid User Input' not in message else PlayerDataError(message, HANDLER, function, 400)
-        return build_error_handler_response(headers, str(error))
+        return build_error_handler_response(str(error))
