@@ -21,20 +21,16 @@ def handler(event, context):
         http_method = event.get("httpMethod", "POST")
         response = None
 
-        if path:
-            log.info(f'Path called: {path} \nWith method: {http_method}')
+        log.info(f'Path called: {path} \nWith method: {http_method}')
 
-            # Get Existing Player Data
-            if (path == f"/{HANDLER}") and (http_method == 'POST'):
+        validate_dict(body, REQUIRED_FIELDS)
 
-                validate_dict(body, REQUIRED_FIELDS)
-
-                response = asyncio.run(login_user(body))
-                log.info("Sleeper user found and logged in.")
+        response = asyncio.run(login_user(body))
+        log.info("Sleeper user found and logged in.")
                 
 
         if response is None:
-            raise Exception("Invalid Call.", 400)
+            raise Exception(f"{BASE_MSG} Unexepected Error.")
         else:
             return send_proxy_response(True, 200, f"{BASE_MSG} Success.", response)
 
