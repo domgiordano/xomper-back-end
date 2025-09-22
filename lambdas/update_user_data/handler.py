@@ -8,7 +8,7 @@ from user_data import update_user_data
 
 log = LOGGER.get_logger(__file__)
 
-HANDLER = 'user'
+HANDLER = 'user/update'
 
 def handler(event, context):
     try:
