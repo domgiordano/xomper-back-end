@@ -4,11 +4,70 @@ on:
   push:
     branches:
       - master
-  workflow_dispatch:
+
+env:
+  AWS_REGION: "us-east-1"
 
 jobs:
-  deploy:
+  detect-changes:
     runs-on: ubuntu-latest
+    outputs:
+      common_changed: ${{ steps.changes.outputs.common }}
+      changed_lambdas: ${{ steps.changes.outputs.changed_lambdas }}
+      all_lambdas: ${{ steps.all-lambdas.outputs.all_lambdas }}
+      has_lambda_changes: ${{ steps.changes.outputs.has_lambda_changes }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Detect changes
+        id: changes
+        run: |
+          # Get changed files between current and previous commit
+          CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git diff --name-only HEAD)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+          # Check if common layer changed
+          if echo "$CHANGED_FILES" | grep -q "^lambdas/common/"; then
+            echo "common=true" >> $GITHUB_OUTPUT
+          else
+            echo "common=false" >> $GITHUB_OUTPUT
+          fi
+
+          # Find changed lambda folders (excluding common) and format as JSON array
+          CHANGED_LAMBDAS=$(echo "$CHANGED_FILES" | grep "^lambdas/" | grep -v "^lambdas/common/" | cut -d'/' -f2 | sort -u | grep -v '^$' || true)
+
+          if [ -n "$CHANGED_LAMBDAS" ]; then
+            # Convert to JSON array
+            JSON_ARRAY=$(echo "$CHANGED_LAMBDAS" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            echo "changed_lambdas=$JSON_ARRAY" >> $GITHUB_OUTPUT
+            echo "has_lambda_changes=true" >> $GITHUB_OUTPUT
+            echo "Changed lambdas: $JSON_ARRAY"
+          else
+            echo "changed_lambdas=[]" >> $GITHUB_OUTPUT
+            echo "has_lambda_changes=false" >> $GITHUB_OUTPUT
+            echo "No lambda changes detected"
+          fi
+
+      - name: Get all lambda folders
+        id: all-lambdas
+        run: |
+          # List all lambda folders except common and format as JSON array
+          ALL_LAMBDAS=$(ls -d lambdas/*/ 2>/dev/null | grep -v "lambdas/common" | xargs -n1 basename | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "all_lambdas=$ALL_LAMBDAS" >> $GITHUB_OUTPUT
+          echo "All lambdas: $ALL_LAMBDAS"
+
+  test-lambdas:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_lambda_changes == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lambda: ${{ fromJson(needs.detect-changes.outputs.changed_lambdas) }}
+      fail-fast: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -16,45 +75,49 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt -t lambdas/common
-
-      - name: Package Lambda functions
         run: |
-          cd lambdas/authorizer
-          zip -r ../../authorizer.zip *
-          cd ../update_player_data
-          zip -r ../../update-player-data.zip *
-          cd ../get_player_data
-          zip -r ../../get-player-data.zip *
-          cd ../update_user_data
-          zip -r ../../update-user-data.zip *
-          cd ../get_user_data
-          zip -r ../../get-user-data.zip *
-          cd ../user_login
-          zip -r ../../user-login.zip *
-          cd ../update_league_data
-          zip -r ../../update-league-data.zip *
-          cd ../get_league_data
-          zip -r ../../get-league-data.zip *
-          cd ../..
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov moto boto3
+
+      - name: Run tests for ${{ matrix.lambda }}
+        run: |
+          if [ -f "tests/test_${{ matrix.lambda }}.py" ]; then
+            echo "Running tests for ${{ matrix.lambda }}"
+            pytest tests/test_${{ matrix.lambda }}.py -v --cov=lambdas/${{ matrix.lambda }}
+          else
+            echo "⚠️  No tests found for ${{ matrix.lambda }}, skipping..."
+          fi
+
+  deploy-layer:
+    needs: [detect-changes, test-lambdas]
+    if: always() && needs.detect-changes.outputs.common_changed == 'true' && (needs.test-lambdas.result == 'success' || needs.test-lambdas.result == 'skipped')
+    runs-on: ubuntu-latest
+    outputs:
+      layer_arn: ${{ steps.deploy-layer.outputs.layer_arn }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Package layer
+        run: |
           mkdir -p python/lambdas
           cp -r lambdas/common python/lambdas/
           python3.10 -m pip install --platform manylinux2014_x86_64 --only-binary=:all: -t python/ -r requirements.txt
           zip -r xomper-shared-packages.zip python
 
-      ######################################################
-      ######################################################
-      ###                     LAYERS                      ##
-      ######################################################
-      ######################################################
-      - name: Deploy Lambda Layer
+      - name: Deploy layer
+        id: deploy-layer
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
         run: |
           LAYER_OUTPUT=$(aws lambda publish-layer-version \
             --layer-name xomper-shared-packages \
@@ -63,219 +126,111 @@ jobs:
             --region $AWS_REGION \
             --output json)
 
-          echo "LAYER_ARN=$(echo $LAYER_OUTPUT | jq -r .LayerVersionArn)" >> $GITHUB_ENV
-          echo "Layer ARN: $LAYER_ARN"
+          LAYER_ARN=$(echo $LAYER_OUTPUT | jq -r .LayerVersionArn)
+          echo "layer_arn=$LAYER_ARN" >> $GITHUB_OUTPUT
+          echo "Published layer: $LAYER_ARN"
 
-      ######################################################
-      ######################################################
-      ###                   AUTHORIZER                    ##
-      ######################################################
-      ######################################################
-      - name: Deploy Authroizer Lambda Function Code
+  update-all-lambdas-layer:
+    needs: [detect-changes, deploy-layer]
+    if: always() && needs.detect-changes.outputs.common_changed == 'true' && needs.deploy-layer.result == 'success'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lambda: ${{ fromJson(needs.detect-changes.outputs.all_lambdas) }}
+      fail-fast: false
+    steps:
+      - name: Update lambda layer configuration
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
         run: |
-          aws lambda update-function-code \
-            --function-name xomper-authorizer \
-            --zip-file fileb://authorizer.zip
-          sleep 5
+          FUNCTION_NAME="xomper-${{ matrix.lambda }}"
+          # Convert underscores to hyphens for AWS function names
+          FUNCTION_NAME=$(echo $FUNCTION_NAME | tr '_' '-')
 
-      - name: Deploy Authorizer Lambda Configurations
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
-          LAYER_ARN: ${{ env.LAYER_ARN }}
-        run: |
+          echo "Updating layer for $FUNCTION_NAME"
           aws lambda update-function-configuration \
-            --function-name xomper-authorizer \
-            --layers $LAYER_ARN \
+            --function-name $FUNCTION_NAME \
+            --layers ${{ needs.deploy-layer.outputs.layer_arn }} \
+            --region $AWS_REGION || echo "Function $FUNCTION_NAME not found, skipping..."
+
+  deploy-changed-lambdas:
+    needs: [detect-changes, test-lambdas, deploy-layer]
+    if: always() && needs.detect-changes.outputs.has_lambda_changes == 'true' && (needs.test-lambdas.result == 'success' || needs.test-lambdas.result == 'skipped')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lambda: ${{ fromJson(needs.detect-changes.outputs.changed_lambdas) }}
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Package lambda
+        run: |
+          cd lambdas/${{ matrix.lambda }}
+          zip -r ../../${{ matrix.lambda }}.zip *
+
+      - name: Deploy lambda code
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          FUNCTION_NAME="xomper-${{ matrix.lambda }}"
+          # Convert underscores to hyphens for AWS function names
+          FUNCTION_NAME=$(echo $FUNCTION_NAME | tr '_' '-')
+
+          echo "Deploying code for $FUNCTION_NAME"
+          aws lambda update-function-code \
+            --function-name $FUNCTION_NAME \
+            --zip-file fileb://${{ matrix.lambda }}.zip \
             --region $AWS_REGION
 
-      ######################################################
-      ######################################################
-      ###                 PLAYER DATA                     ##
-      ######################################################
-      ######################################################
-
-      ## UPDATE PLAYER DATA 
-      - name: Deploy Update Player Data Lambda Function Code
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
-        run: |
-          aws lambda update-function-code \
-            --function-name xomper-update-player-data \
-            --zip-file fileb://update-player-data.zip
-          sleep 5
-
-      - name: Deploy Update Player Data Lambda Configurations
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
-          LAYER_ARN: ${{ env.LAYER_ARN }}
-        run: |
-          aws lambda update-function-configuration \
-            --function-name xomper-update-player-data \
-            --layers $LAYER_ARN \
+          # Wait for function to finish updating before config change
+          echo "Waiting for function update to complete..."
+          aws lambda wait function-updated \
+            --function-name $FUNCTION_NAME \
             --region $AWS_REGION
 
-      ## GET PLAYER DATA 
-      - name: Deploy Get Player Data Lambda Function Code
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
+          # If layer was updated, also update config (only after code update completes)
+          if [ "${{ needs.deploy-layer.outputs.layer_arn }}" != "" ]; then
+            echo "Updating layer configuration for $FUNCTION_NAME"
+            aws lambda update-function-configuration \
+              --function-name $FUNCTION_NAME \
+              --layers ${{ needs.deploy-layer.outputs.layer_arn }} \
+              --region $AWS_REGION
+
+            # Wait for config update to complete
+            echo "Waiting for configuration update to complete..."
+            aws lambda wait function-updated \
+              --function-name $FUNCTION_NAME \
+              --region $AWS_REGION
+          fi
+
+          echo "✅ $FUNCTION_NAME deployment complete"
+
+  summary:
+    needs:
+      [
+        detect-changes,
+        deploy-layer,
+        update-all-lambdas-layer,
+        deploy-changed-lambdas,
+      ]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment summary
         run: |
-          aws lambda update-function-code \
-            --function-name xomper-get-player-data \
-            --zip-file fileb://get-player-data.zip
-          sleep 5
-
-      - name: Deploy Get Player Data Lambda Configurations
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
-          LAYER_ARN: ${{ env.LAYER_ARN }}
-        run: |
-          aws lambda update-function-configuration \
-            --function-name xomper-get-player-data \
-            --layers $LAYER_ARN \
-            --region $AWS_REGION
-
-      ######################################################
-      ######################################################
-      ###                 USER DATA                       ##
-      ######################################################
-      ######################################################
-
-      ## UPDATE USER DATA 
-      - name: Deploy Update User Data Lambda Function Code
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
-        run: |
-          aws lambda update-function-code \
-            --function-name xomper-update-user-data \
-            --zip-file fileb://update-user-data.zip
-          sleep 5
-
-      - name: Deploy Update User Data Lambda Configurations
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
-          LAYER_ARN: ${{ env.LAYER_ARN }}
-        run: |
-          aws lambda update-function-configuration \
-            --function-name xomper-update-user-data \
-            --layers $LAYER_ARN \
-            --region $AWS_REGION
-
-      ## GET USER DATA 
-      - name: Deploy Get User Data Lambda Function Code
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
-        run: |
-          aws lambda update-function-code \
-            --function-name xomper-get-user-data \
-            --zip-file fileb://get-user-data.zip
-          sleep 5
-
-      - name: Deploy Get User Data Lambda Configurations
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
-          LAYER_ARN: ${{ env.LAYER_ARN }}
-        run: |
-          aws lambda update-function-configuration \
-            --function-name xomper-get-user-data \
-            --layers $LAYER_ARN \
-            --region $AWS_REGION
-
-      ## LOGIN USER
-      - name: Deploy User Login Lambda Function Code
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
-        run: |
-          aws lambda update-function-code \
-            --function-name xomper-user-login \
-            --zip-file fileb://user-login.zip
-          sleep 5
-
-      - name: Deploy User Login Lambda Configurations
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
-          LAYER_ARN: ${{ env.LAYER_ARN }}
-        run: |
-          aws lambda update-function-configuration \
-            --function-name xomper-user-login \
-            --layers $LAYER_ARN \
-            --region $AWS_REGION
-
-      ######################################################
-      ######################################################
-      ###                 LEAGUE DATA                     ##
-      ######################################################
-      ######################################################
-
-      ## UPDATE LEAGUE DATA 
-      - name: Deploy Update League Data Lambda Function Code
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
-        run: |
-          aws lambda update-function-code \
-            --function-name xomper-update-league-data \
-            --zip-file fileb://update-league-data.zip
-          sleep 5
-
-      - name: Deploy Update League Data Lambda Configurations
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
-          LAYER_ARN: ${{ env.LAYER_ARN }}
-        run: |
-          aws lambda update-function-configuration \
-            --function-name xomper-update-league-data \
-            --layers $LAYER_ARN \
-            --region $AWS_REGION
-
-      ## GET LEAGUE DATA 
-      - name: Deploy Get League Data Lambda Function Code
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
-        run: |
-          aws lambda update-function-code \
-            --function-name xomper-get-league-data \
-            --zip-file fileb://get-league-data.zip
-          sleep 5
-
-      - name: Deploy Get League Data Lambda Configurations
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: 'us-east-1'
-          LAYER_ARN: ${{ env.LAYER_ARN }}
-        run: |
-          aws lambda update-function-configuration \
-            --function-name xomper-get-league-data \
-            --layers $LAYER_ARN \
-            --region $AWS_REGION
+          echo "=== Deployment Summary ==="
+          echo "Common layer changed: ${{ needs.detect-changes.outputs.common_changed }}"
+          echo "Changed lambdas: ${{ needs.detect-changes.outputs.changed_lambdas }}"
+          if [ "${{ needs.deploy-layer.outputs.layer_arn }}" != "" ]; then
+            echo "New layer ARN: ${{ needs.deploy-layer.outputs.layer_arn }}"
+          fi
+          echo "=========================="

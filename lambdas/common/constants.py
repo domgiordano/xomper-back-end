@@ -9,19 +9,19 @@ PRODUCT = 'xomper'
 # Headers
 RESPONSE_HEADERS = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Authorization,Content-Type,X-Amz-Date,X-Api-Key,X-Amz-Security-Token",  
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Credentials": "true",  # if sending cookies or auth headers
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
     "Content-Type": "application/json"
 }
 
 # Logging
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
-LOGGER = Logger(LOG_LEVEL)
 
 # Dynamodb
 DYNAMODB_KMS_ALIAS = os.environ['DYNAMODB_KMS_ALIAS']
-PLAYER_DATA_TABLE_NAME = os.environ['PLAYER_DATA_TABLE_NAME']
-USER_DATA_TABLE_NAME = os.environ['USER_DATA_TABLE_NAME']
-LEAGUE_DATA_TABLE_NAME = os.environ['LEAGUE_DATA_TABLE_NAME']
+
+# Email Service
+FROM_EMAIL = os.environ.get('FROM_EMAIL', 'noreply@xomper.com')
+XOMPER_URL = "https://xomper.com"
+
+# LOGO URL
+LOGO_URL = f"{XOMPER_URL}/assets/img/logo-x-rework.png"
