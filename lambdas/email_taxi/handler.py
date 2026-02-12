@@ -1,29 +1,98 @@
 """
-POST /email/rule-proposal - Send Taxi Squad Email
+POST /email/taxi - Send Taxi Squad Steal Emails
+Sends league-wide notification + targeted owner notification.
+
+Expected body:
+{
+    "stealer": { "display_name": "Dom" },
+    "player": { "first_name": "John", "last_name": "Johnson", "position": "RB", "team": "NYG" },
+    "owner": { "display_name": "Steve", "email": "steve@example.com" },
+    "recipients": ["email1@...", "email2@..."]
+}
 """
-import asyncio
 from lambdas.common.logger import get_logger
 from lambdas.common.errors import handle_errors
 from lambdas.common.utility_helpers import success_response, parse_body, require_fields
+from lambdas.common.ses_helper import send_emails_concurrently
+from lambdas.common.constants import XOMPER_URL
+from lambdas.common.email_templates import (
+    generate_taxi_steal_league_email,
+    generate_taxi_steal_league_email_plain_text,
+    generate_taxi_steal_owner_email,
+    generate_taxi_steal_owner_email_plain_text,
+)
 
 log = get_logger(__file__)
 
 HANDLER = 'email_taxi'
 
+
 @handle_errors(HANDLER)
 def handler(event, context):
-    log.info("📧 Starting Send Taxi Squad Email...")
+    log.info("Starting Send Taxi Squad Email...")
     body = parse_body(event)
-    require_fields(body, 'user', 'targetUser', 'player', 'emails')
+    require_fields(body, 'stealer', 'player', 'owner', 'recipients')
 
-    user = body.get('user')
-    target_user = body.get('targetUser')
-    player = body.get('player')
-    emails = body.get('emails')
+    stealer = body['stealer']
+    player = body['player']
+    owner = body['owner']
+    recipients = body['recipients']
 
-    log.info(f"User {user} is stealing a player from {target_user}'s taxi squad. \n Sending emails to league members: {emails}")
+    stealer_name = stealer.get('display_name', 'A league member')
+    player_name = f"{player.get('first_name', '')} {player.get('last_name', '')}".strip() or 'Unknown Player'
+    player_position = player.get('position', 'N/A')
+    player_team = player.get('team', 'N/A')
+    owner_name = owner.get('display_name', 'Unknown')
+    owner_email = owner.get('email')
 
-    successes, failures = 0,0 # Return successful and failure emails
+    log.info(f"{stealer_name} stealing {player_name} from {owner_name}. Notifying {len(recipients)} members.")
+
+    # Generate league-wide template
+    league_subject = f"Taxi Squad Alert: {stealer_name} is stealing {player_name}!"
+    league_html = generate_taxi_steal_league_email(
+        stealer_name=stealer_name,
+        player_name=player_name,
+        player_position=player_position,
+        player_team=player_team,
+        target_owner_name=owner_name,
+        league_url=XOMPER_URL,
+    )
+    league_text = generate_taxi_steal_league_email_plain_text(
+        stealer_name=stealer_name,
+        player_name=player_name,
+        player_position=player_position,
+        player_team=player_team,
+        target_owner_name=owner_name,
+        league_url=XOMPER_URL,
+    )
+
+    # Build all email tasks
+    tasks = [(email, league_subject, league_html, league_text) for email in recipients]
+
+    # Add targeted owner notification
+    if owner_email:
+        owner_subject = f"URGENT: {stealer_name} is stealing {player_name} from your taxi squad!"
+        owner_html = generate_taxi_steal_owner_email(
+            stealer_name=stealer_name,
+            player_name=player_name,
+            player_position=player_position,
+            player_team=player_team,
+            owner_name=owner_name,
+            league_url=XOMPER_URL,
+        )
+        owner_text = generate_taxi_steal_owner_email_plain_text(
+            stealer_name=stealer_name,
+            player_name=player_name,
+            player_position=player_position,
+            player_team=player_team,
+            owner_name=owner_name,
+            league_url=XOMPER_URL,
+        )
+        tasks.append((owner_email, owner_subject, owner_html, owner_text))
+
+    # Send all emails concurrently
+    successes, failures = send_emails_concurrently(tasks)
+    log.info(f"Taxi emails complete: {successes} sent, {failures} failed")
 
     return success_response({
         "successfulEmails": successes,

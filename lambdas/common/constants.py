@@ -24,4 +24,5 @@ FROM_EMAIL = os.environ.get('FROM_EMAIL', 'noreply@xomper.com')
 XOMPER_URL = "https://xomper.com"
 
 # LOGO URL
-LOGO_URL = f"{XOMPER_URL}/assets/img/logo-x-rework.png"
+LOGO_URL = f"{XOMPER_URL}/assets/img/xomper-logo.jpg"
+BANNER_LOGO_URL = f"{XOMPER_URL}/assets/img/xomper-banner.jpg"
