@@ -19,7 +19,7 @@ log = get_logger(__file__)
 # JSON Encoding
 # ============================================
 
-class XomifyJSONEncoder(json.JSONEncoder):
+class XomperJSONEncoder(json.JSONEncoder):
     """
     Custom JSON encoder that handles:
     - Decimal (from DynamoDB)
@@ -41,7 +41,7 @@ class XomifyJSONEncoder(json.JSONEncoder):
 
 def json_dumps(obj: Any) -> str:
     """Serialize object to JSON string with custom encoder."""
-    return json.dumps(obj, cls=XomifyJSONEncoder)
+    return json.dumps(obj, cls=XomperJSONEncoder)
 
 
 # ============================================
@@ -254,7 +254,7 @@ def encode_credentials(key: str, secret: str) -> str:
 # ============================================
 # These match your old function names
 
-DecimalEncoder = XomifyJSONEncoder
+DecimalEncoder = XomperJSONEncoder
 
 def is_called_from_api(event):
     return is_api_request(event)
