@@ -8,6 +8,7 @@ Includes compensation table and action instructions.
 from lambdas.common.email_templates.base import (
     wrap_email_html,
     generate_section_title,
+    generate_league_badge,
     generate_player_card,
     generate_button,
     _escape,
@@ -35,6 +36,7 @@ def generate_taxi_steal_owner_email(
     owner_name: str,
     compensation_table: list = None,
     league_url: str = None,
+    league_name: str = "",
 ) -> str:
     """Generate HTML email for taxi squad steal target owner notification."""
     url = league_url or XOMPER_URL
@@ -61,6 +63,7 @@ def generate_taxi_steal_owner_email(
 
     content = f"""
     {generate_section_title("Your Taxi Squad Is Under Attack", ACCENT_RED)}
+    {generate_league_badge(league_name) if league_name else ""}
 
     <!-- Main message -->
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -206,6 +209,7 @@ def generate_taxi_steal_owner_email_plain_text(
     owner_name: str,
     compensation_table: list = None,
     league_url: str = None,
+    league_name: str = "",
 ) -> str:
     """Generate plain text version."""
     url = league_url or XOMPER_URL
@@ -216,9 +220,11 @@ def generate_taxi_steal_owner_email_plain_text(
         for row in comp_table
     )
 
+    league_line = f"League: {league_name}\n" if league_name else ""
     return (
         f"YOUR TAXI SQUAD IS UNDER ATTACK\n"
         f"================================\n\n"
+        f"{league_line}"
         f"{stealer_name} is trying to steal {player_position} {player_name} ({player_team}) "
         f"from your taxi squad!\n\n"
         f"ACTION REQUIRED - You have until Thursday 12:00 PM EST to respond.\n\n"

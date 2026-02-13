@@ -7,6 +7,7 @@ Sent to all league members when a new rule is proposed.
 from lambdas.common.email_templates.base import (
     wrap_email_html,
     generate_section_title,
+    generate_league_badge,
     generate_button,
     _escape,
     CHAMPION_GOLD, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_MUTED,
@@ -20,6 +21,7 @@ def generate_rule_proposed_email(
     rule_title: str,
     rule_description: str,
     vote_url: str = None,
+    league_name: str = "",
 ) -> str:
     """Generate HTML email for new rule proposal notification."""
     url = vote_url or XOMPER_URL
@@ -29,6 +31,7 @@ def generate_rule_proposed_email(
 
     content = f"""
     {generate_section_title("New Rule Proposal")}
+    {generate_league_badge(league_name) if league_name else ""}
 
     <!-- Proposer badge -->
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -93,7 +96,7 @@ def generate_rule_proposed_email(
 
     return wrap_email_html(
         content,
-        preheader_text=f"{proposer_name} proposed a new rule: {rule_title}"
+        preheader_text=f"{proposer_name} proposed a new rule in {league_name}: {rule_title}" if league_name else f"{proposer_name} proposed a new rule: {rule_title}"
     )
 
 
@@ -102,12 +105,15 @@ def generate_rule_proposed_email_plain_text(
     rule_title: str,
     rule_description: str,
     vote_url: str = None,
+    league_name: str = "",
 ) -> str:
     """Generate plain text version."""
     url = vote_url or XOMPER_URL
+    league_line = f"League: {league_name}\n" if league_name else ""
     return (
         f"NEW RULE PROPOSAL\n"
         f"=================\n\n"
+        f"{league_line}"
         f"Proposed by: {proposer_name}\n\n"
         f"Title: {rule_title}\n\n"
         f"Description:\n"

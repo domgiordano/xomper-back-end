@@ -7,7 +7,8 @@ Expected body:
     "proposal": {
         "title": "Allow IR stashing",
         "description": "Players on IR can be stashed...",
-        "proposed_by_username": "Dom"
+        "proposed_by_username": "Dom",
+        "league_name": "The Dynasty League"
     },
     "approved_by": ["Dom", "Steve", "Mike"],
     "rejected_by": ["Jake"],
@@ -43,6 +44,7 @@ def handler(event, context):
     proposer_name = proposal.get('proposed_by_username', 'A league member')
     rule_title = proposal.get('title', 'Untitled Rule')
     rule_description = proposal.get('description', '')
+    league_name = proposal.get('league_name', '')
 
     log.info(f"Rule '{rule_title}' ACCEPTED. {len(approved_by)} yes, {len(rejected_by)} no. Notifying {len(recipients)} members.")
 
@@ -54,6 +56,7 @@ def handler(event, context):
         approved_voters=approved_by,
         rejected_voters=rejected_by,
         league_url=XOMPER_URL,
+        league_name=league_name,
     )
     text_body = generate_rule_accepted_email_plain_text(
         proposer_name=proposer_name,
@@ -62,6 +65,7 @@ def handler(event, context):
         approved_voters=approved_by,
         rejected_voters=rejected_by,
         league_url=XOMPER_URL,
+        league_name=league_name,
     )
 
     tasks = [(email, subject, html_body, text_body) for email in recipients]

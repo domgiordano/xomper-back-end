@@ -8,6 +8,7 @@ Includes vote breakdown showing who voted yes/no.
 from lambdas.common.email_templates.base import (
     wrap_email_html,
     generate_section_title,
+    generate_league_badge,
     generate_stamp,
     generate_vote_breakdown,
     generate_button,
@@ -25,6 +26,7 @@ def generate_rule_denied_email(
     approved_voters: list,
     rejected_voters: list,
     league_url: str = None,
+    league_name: str = "",
 ) -> str:
     """Generate HTML email for denied rule notification."""
     url = league_url or XOMPER_URL
@@ -36,6 +38,7 @@ def generate_rule_denied_email(
 
     content = f"""
     {generate_section_title("Rule Change Denied", ERROR_RED)}
+    {generate_league_badge(league_name) if league_name else ""}
 
     <!-- DENIED stamp -->
     {generate_stamp("DENIED", ERROR_RED)}
@@ -117,7 +120,7 @@ def generate_rule_denied_email(
 
     return wrap_email_html(
         content,
-        preheader_text=f"Rule DENIED: {rule_title} ({yes_count}-{no_count} vote)"
+        preheader_text=f"Rule DENIED in {league_name}: {rule_title} ({yes_count}-{no_count} vote)" if league_name else f"Rule DENIED: {rule_title} ({yes_count}-{no_count} vote)"
     )
 
 
@@ -128,6 +131,7 @@ def generate_rule_denied_email_plain_text(
     approved_voters: list,
     rejected_voters: list,
     league_url: str = None,
+    league_name: str = "",
 ) -> str:
     """Generate plain text version."""
     url = league_url or XOMPER_URL
@@ -136,10 +140,12 @@ def generate_rule_denied_email_plain_text(
 
     yes_names = ", ".join(approved_voters) if approved_voters else "None"
     no_names = ", ".join(rejected_voters) if rejected_voters else "None"
+    league_line = f"League: {league_name}\n" if league_name else ""
 
     return (
         f"RULE DENIED\n"
         f"===========\n\n"
+        f"{league_line}"
         f"Title: {rule_title}\n"
         f"Proposed by: {proposer_name}\n\n"
         f"Description:\n"

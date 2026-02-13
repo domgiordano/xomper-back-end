@@ -102,6 +102,24 @@ def generate_section_title(text: str, color: str = CHAMPION_GOLD) -> str:
     """
 
 
+def generate_league_badge(league_name: str) -> str:
+    """League name badge displayed below section titles."""
+    safe_name = _escape(league_name)
+    return f"""
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+            <td style="padding: 0 24px 16px;">
+                <span style="display: inline-block; padding: 4px 12px; background-color: {SURFACE_LIGHT};
+                             border-radius: 20px; font-family: {FONT_MONO}; font-size: 11px;
+                             font-weight: 600; color: {TEXT_SECONDARY}; letter-spacing: 0.03em;">
+                    {safe_name}
+                </span>
+            </td>
+        </tr>
+    </table>
+    """
+
+
 def generate_player_card(player_name: str, position: str, team: str) -> str:
     """Player info card component."""
     position_colors = {

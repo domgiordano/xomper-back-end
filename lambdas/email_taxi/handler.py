@@ -7,7 +7,8 @@ Expected body:
     "stealer": { "display_name": "Dom" },
     "player": { "first_name": "John", "last_name": "Johnson", "position": "RB", "team": "NYG" },
     "owner": { "display_name": "Steve", "email": "steve@example.com" },
-    "recipients": ["email1@...", "email2@..."]
+    "recipients": ["email1@...", "email2@..."],
+    "league_name": "The Dynasty League"
 }
 """
 from lambdas.common.logger import get_logger
@@ -37,6 +38,7 @@ def handler(event, context):
     player = body['player']
     owner = body['owner']
     recipients = body['recipients']
+    league_name = body.get('league_name', '')
 
     stealer_name = stealer.get('display_name', 'A league member')
     player_name = f"{player.get('first_name', '')} {player.get('last_name', '')}".strip() or 'Unknown Player'
@@ -56,6 +58,7 @@ def handler(event, context):
         player_team=player_team,
         target_owner_name=owner_name,
         league_url=XOMPER_URL,
+        league_name=league_name,
     )
     league_text = generate_taxi_steal_league_email_plain_text(
         stealer_name=stealer_name,
@@ -64,6 +67,7 @@ def handler(event, context):
         player_team=player_team,
         target_owner_name=owner_name,
         league_url=XOMPER_URL,
+        league_name=league_name,
     )
 
     # Build all email tasks
@@ -79,6 +83,7 @@ def handler(event, context):
             player_team=player_team,
             owner_name=owner_name,
             league_url=XOMPER_URL,
+            league_name=league_name,
         )
         owner_text = generate_taxi_steal_owner_email_plain_text(
             stealer_name=stealer_name,
@@ -87,6 +92,7 @@ def handler(event, context):
             player_team=player_team,
             owner_name=owner_name,
             league_url=XOMPER_URL,
+            league_name=league_name,
         )
         tasks.append((owner_email, owner_subject, owner_html, owner_text))
 

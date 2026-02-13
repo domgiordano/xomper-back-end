@@ -7,6 +7,7 @@ Sent to all league members when someone initiates a taxi squad steal.
 from lambdas.common.email_templates.base import (
     wrap_email_html,
     generate_section_title,
+    generate_league_badge,
     generate_player_card,
     generate_button,
     _escape,
@@ -22,6 +23,7 @@ def generate_taxi_steal_league_email(
     player_team: str,
     target_owner_name: str,
     league_url: str = None,
+    league_name: str = "",
 ) -> str:
     """Generate HTML email for taxi squad steal league notification."""
     url = league_url or XOMPER_URL
@@ -31,6 +33,7 @@ def generate_taxi_steal_league_email(
 
     content = f"""
     {generate_section_title("Taxi Squad Alert")}
+    {generate_league_badge(league_name) if league_name else ""}
 
     <!-- Main message -->
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -86,12 +89,15 @@ def generate_taxi_steal_league_email_plain_text(
     player_team: str,
     target_owner_name: str,
     league_url: str = None,
+    league_name: str = "",
 ) -> str:
     """Generate plain text version."""
     url = league_url or XOMPER_URL
+    league_line = f"League: {league_name}\n" if league_name else ""
     return (
         f"TAXI SQUAD ALERT\n"
         f"================\n\n"
+        f"{league_line}"
         f"{stealer_name} is trying to steal {player_position} {player_name} ({player_team}) "
         f"from {target_owner_name}'s taxi squad!\n\n"
         f"{target_owner_name} has until Thursday 12:00 PM EST to promote the player "
