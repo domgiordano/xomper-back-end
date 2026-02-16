@@ -120,8 +120,9 @@ def generate_league_badge(league_name: str) -> str:
     """
 
 
-def generate_player_card(player_name: str, position: str, team: str) -> str:
-    """Player info card component."""
+def generate_player_card(player_name: str, position: str, team: str,
+                         player_image_url: str = "", team_logo_url: str = "") -> str:
+    """Player info card component with optional player headshot and team logo."""
     position_colors = {
         "QB": "#5ba3ff",
         "RB": SUCCESS_GREEN,
@@ -132,6 +133,34 @@ def generate_player_card(player_name: str, position: str, team: str) -> str:
     }
     pos_color = position_colors.get(position.upper(), CHAMPION_GOLD)
 
+    # Player avatar: use headshot image if provided, otherwise position circle
+    if player_image_url:
+        avatar = f"""
+            <img src="{player_image_url}" alt="{_escape(player_name)}" width="52" height="52"
+                 style="display: block; width: 52px; height: 52px; border-radius: 50%;
+                        border: 2px solid {pos_color}; object-fit: cover;" />
+        """
+        avatar_width = "58"
+    else:
+        avatar = f"""
+            <div style="width: 44px; height: 44px; border-radius: 50%; background-color: {pos_color};
+                        text-align: center; line-height: 44px; font-family: {FONT_MONO};
+                        font-weight: 700; font-size: 14px; color: {DEEP_NAVY};">
+                {position.upper()}
+            </div>
+        """
+        avatar_width = "48"
+
+    # Team logo next to position/team text
+    team_info = f'{position.upper()} &middot; {team}'
+    if team_logo_url:
+        team_info = (
+            f'<img src="{team_logo_url}" alt="{_escape(team)}" width="16" height="16"'
+            f' style="display: inline-block; width: 16px; height: 16px; vertical-align: middle;'
+            f' margin-right: 4px; border: 0;" />'
+            f'<span style="vertical-align: middle;">{position.upper()} &middot; {team}</span>'
+        )
+
     return f"""
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="background-color: {DARK_NAVY}; border: 1px solid {SURFACE_LIGHT}; border-radius: 10px; overflow: hidden;">
@@ -139,19 +168,15 @@ def generate_player_card(player_name: str, position: str, team: str) -> str:
             <td style="padding: 16px 20px;">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                     <tr>
-                        <td width="48" valign="middle">
-                            <div style="width: 44px; height: 44px; border-radius: 50%; background-color: {pos_color};
-                                        text-align: center; line-height: 44px; font-family: {FONT_MONO};
-                                        font-weight: 700; font-size: 14px; color: {DEEP_NAVY};">
-                                {position.upper()}
-                            </div>
+                        <td width="{avatar_width}" valign="middle">
+                            {avatar}
                         </td>
                         <td style="padding-left: 14px;" valign="middle">
                             <div style="font-family: {FONT_BODY}; font-size: 18px; font-weight: 700; color: {TEXT_PRIMARY};">
                                 {player_name}
                             </div>
                             <div style="font-family: {FONT_MONO}; font-size: 13px; color: {TEXT_SECONDARY}; margin-top: 2px;">
-                                {position.upper()} &middot; {team}
+                                {team_info}
                             </div>
                         </td>
                     </tr>

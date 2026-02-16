@@ -1,8 +1,8 @@
 import requests
 
-from lambdas.common.constants import LOGGER
+from lambdas.common.logger import get_logger
 
-log = LOGGER.get_logger(__file__)
+log = get_logger(__file__)
 SLEEPER_URL_BASE = "https://api.sleeper.app/v1"
 
 def fetch_nfl_players():

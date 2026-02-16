@@ -1,9 +1,10 @@
 
 import boto3
 from datetime import datetime
-from lambdas.common.constants import AWS_DEFAULT_REGION, DYNAMODB_KMS_ALIAS, LOGGER
+from lambdas.common.constants import AWS_DEFAULT_REGION, DYNAMODB_KMS_ALIAS
+from lambdas.common.logger import get_logger
 
-log = LOGGER.get_logger(__file__)
+log = get_logger(__file__)
 
 dynamodb_res = boto3.resource("dynamodb", region_name=AWS_DEFAULT_REGION)
 dynamodb_client = boto3.client("dynamodb", region_name=AWS_DEFAULT_REGION)

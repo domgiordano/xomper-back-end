@@ -32,13 +32,16 @@ HANDLER = 'email_taxi'
 def handler(event, context):
     log.info("Starting Send Taxi Squad Email...")
     body = parse_body(event)
-    require_fields(body, 'stealer', 'player', 'owner', 'recipients', 'league_name')
+    require_fields(body, 'stealer', 'player', 'owner', 'recipients', 'league_name', 'player_image_url', 'team_logo_url', 'pick_cost')
 
     stealer = body['stealer']
     player = body['player']
     owner = body['owner']
     recipients = body['recipients']
     league_name = body.get('league_name', '')
+    player_image_url = body.get('player_image_url', '')
+    team_logo_url = body.get('team_logo_url', '')
+    pick_cost = body.get('pick_cost', '')
 
     stealer_name = stealer.get('display_name', 'A league member')
     player_name = f"{player.get('first_name', '')} {player.get('last_name', '')}".strip() or 'Unknown Player'
@@ -59,6 +62,9 @@ def handler(event, context):
         target_owner_name=owner_name,
         league_url=XOMPER_URL,
         league_name=league_name,
+        player_image_url=player_image_url,
+        team_logo_url=team_logo_url,
+        pick_cost=pick_cost,
     )
     league_text = generate_taxi_steal_league_email_plain_text(
         stealer_name=stealer_name,
@@ -68,6 +74,7 @@ def handler(event, context):
         target_owner_name=owner_name,
         league_url=XOMPER_URL,
         league_name=league_name,
+        pick_cost=pick_cost,
     )
 
     # Build all email tasks
@@ -84,6 +91,9 @@ def handler(event, context):
             owner_name=owner_name,
             league_url=XOMPER_URL,
             league_name=league_name,
+            player_image_url=player_image_url,
+            team_logo_url=team_logo_url,
+            pick_cost=pick_cost,
         )
         owner_text = generate_taxi_steal_owner_email_plain_text(
             stealer_name=stealer_name,
@@ -93,6 +103,7 @@ def handler(event, context):
             owner_name=owner_name,
             league_url=XOMPER_URL,
             league_name=league_name,
+            pick_cost=pick_cost,
         )
         tasks.append((owner_email, owner_subject, owner_html, owner_text))
 
