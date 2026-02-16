@@ -32,21 +32,21 @@ HANDLER = 'email_taxi'
 def handler(event, context):
     log.info("Starting Send Taxi Squad Email...")
     body = parse_body(event)
-    require_fields(body, 'stealer', 'player', 'owner', 'recipients', 'league_name', 'player_image_url', 'team_logo_url', 'pick_cost')
+    require_fields(body, 'stealer', 'player', 'owner', 'recipients', 'league_name')
 
     stealer = body['stealer']
     player = body['player']
     owner = body['owner']
     recipients = body['recipients']
     league_name = body.get('league_name', '')
-    player_image_url = body.get('player_image_url', '')
-    team_logo_url = body.get('team_logo_url', '')
-    pick_cost = body.get('pick_cost', '')
 
     stealer_name = stealer.get('display_name', 'A league member')
     player_name = f"{player.get('first_name', '')} {player.get('last_name', '')}".strip() or 'Unknown Player'
     player_position = player.get('position', 'N/A')
     player_team = player.get('team', 'N/A')
+    player_image_url = player.get('player_image_url', '')
+    team_logo_url = player.get('team_logo_url', '')
+    pick_cost = player.get('pick_cost', '')
     owner_name = owner.get('display_name', 'Unknown')
     owner_email = owner.get('email')
 
