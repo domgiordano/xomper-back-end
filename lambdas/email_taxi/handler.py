@@ -32,13 +32,13 @@ HANDLER = 'email_taxi'
 def handler(event, context):
     log.info("Starting Send Taxi Squad Email...")
     body = parse_body(event)
-    require_fields(body, 'stealer', 'player', 'owner', 'recipients', 'leagueName')
+    require_fields(body, 'stealer', 'player', 'owner', 'recipients', 'league_name')
 
     stealer = body['stealer']
     player = body['player']
     owner = body['owner']
     recipients = body['recipients']
-    league_name = body.get('leagueName', '')
+    league_name = body.get('league_name', '')
 
     stealer_name = stealer.get('display_name', 'A league member')
     player_name = f"{player.get('first_name', '')} {player.get('last_name', '')}".strip() or 'Unknown Player'
