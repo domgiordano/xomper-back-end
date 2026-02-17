@@ -156,5 +156,5 @@ def generate_rule_denied_email_plain_text(
         f"Voted No:  {no_names}\n\n"
         f"View league rules: {url}\n\n"
         f"---\n"
-        f"Xomper Fantasy Football | xomper.com"
+        f"Xomper Fantasy Football | xomper.xomware.com"
     )

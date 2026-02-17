@@ -274,5 +274,5 @@ def generate_taxi_steal_owner_email_plain_text(
         f"{comp_lines}\n\n"
         f"Take action: {url}\n\n"
         f"---\n"
-        f"Xomper Fantasy Football | xomper.com"
+        f"Xomper Fantasy Football | xomper.xomware.com"
     )

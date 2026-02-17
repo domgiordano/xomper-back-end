@@ -121,5 +121,5 @@ def generate_rule_proposed_email_plain_text(
         f"Your vote matters! A 2/3 majority is needed to approve this rule change.\n\n"
         f"Vote now: {url}\n\n"
         f"---\n"
-        f"Xomper Fantasy Football | xomper.com"
+        f"Xomper Fantasy Football | xomper.xomware.com"
     )
