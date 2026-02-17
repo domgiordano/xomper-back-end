@@ -19,8 +19,8 @@ LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
 DYNAMODB_KMS_ALIAS = os.environ['DYNAMODB_KMS_ALIAS']
 
 # Email Service
-FROM_EMAIL = os.environ.get('FROM_EMAIL', 'noreply@xomper.com')
-XOMPER_URL = "https://xomper.com"
+FROM_EMAIL = os.environ.get('FROM_EMAIL', 'noreply@xomper.xomware.com')
+XOMPER_URL = "https://xomper.xomware.com"
 
 # LOGO URL
 LOGO_URL = f"{XOMPER_URL}/assets/img/xomper-logo.jpg"

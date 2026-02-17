@@ -142,5 +142,5 @@ def generate_taxi_steal_league_email_plain_text(
         f"receives the player in exchange for draft pick compensation.\n\n"
         f"View on Xomper: {url}\n\n"
         f"---\n"
-        f"Xomper Fantasy Football | xomper.com"
+        f"Xomper Fantasy Football | xomper.xomware.com"
     )

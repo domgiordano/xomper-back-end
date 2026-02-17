@@ -4,14 +4,14 @@ Serverless Python backend for Xomper fantasy football, running on AWS Lambda beh
 
 ## Architecture
 
-| Service | Purpose |
-|---------|---------|
-| API Gateway | REST API with JWT authorizer |
-| Lambda | Python 3.10 handlers |
-| DynamoDB | Data persistence (KMS encrypted) |
-| SES | Transactional email delivery |
-| SSM Parameter Store | Secrets management |
-| Lambda Layers | Shared code (`xomper-shared-packages`) |
+| Service             | Purpose                                |
+| ------------------- | -------------------------------------- |
+| API Gateway         | REST API with JWT authorizer           |
+| Lambda              | Python 3.10 handlers                   |
+| DynamoDB            | Data persistence (KMS encrypted)       |
+| SES                 | Transactional email delivery           |
+| SSM Parameter Store | Secrets management                     |
+| Lambda Layers       | Shared code (`xomper-shared-packages`) |
 
 **Region:** `us-east-1`
 
@@ -49,42 +49,56 @@ lambdas/
 All email endpoints send concurrently via `asyncio.to_thread` + `asyncio.gather`.
 
 **POST /email/rule-proposal** - Notify league of new rule proposal
+
 ```json
 {
-    "proposal": {
-        "title": "Allow IR stashing",
-        "description": "Players on IR can be stashed...",
-        "proposed_by_username": "Dom",
-        "league_name": "The Dynasty League"
-    },
-    "recipients": ["email1@example.com", "email2@example.com"]
+  "proposal": {
+    "title": "Allow IR stashing",
+    "description": "Players on IR can be stashed...",
+    "proposed_by_username": "Dom",
+    "league_name": "The Dynasty League"
+  },
+  "recipients": ["email1@example.com", "email2@example.com"]
 }
 ```
 
 **POST /email/rule-accept** - Notify league of approved rule
+
 ```json
 {
-    "proposal": { "title": "...", "description": "...", "proposed_by_username": "...", "league_name": "..." },
-    "approved_by": ["Dom", "Steve", "Mike"],
-    "rejected_by": ["Jake"],
-    "recipients": ["email1@example.com"]
+  "proposal": {
+    "title": "...",
+    "description": "...",
+    "proposed_by_username": "...",
+    "league_name": "..."
+  },
+  "approved_by": ["Dom", "Steve", "Mike"],
+  "rejected_by": ["Jake"],
+  "recipients": ["email1@example.com"]
 }
 ```
 
 **POST /email/rule-deny** - Notify league of denied rule (same shape as rule-accept)
 
 **POST /email/taxi** - Notify league + owner of taxi squad steal
+
 ```json
 {
-    "stealer": { "display_name": "Dom" },
-    "player": { "first_name": "John", "last_name": "Johnson", "position": "RB", "team": "NYG" },
-    "owner": { "display_name": "Steve", "email": "steve@example.com" },
-    "recipients": ["email1@example.com"],
-    "league_name": "The Dynasty League"
+  "stealer": { "display_name": "Dom" },
+  "player": {
+    "first_name": "John",
+    "last_name": "Johnson",
+    "position": "RB",
+    "team": "NYG"
+  },
+  "owner": { "display_name": "Steve", "email": "steve@example.com" },
+  "recipients": ["email1@example.com"],
+  "league_name": "The Dynasty League"
 }
 ```
 
 All email endpoints return:
+
 ```json
 { "successfulEmails": 5, "failedEmails": 0 }
 ```
@@ -99,19 +113,19 @@ JWT-based authorization via API Gateway Lambda authorizer.
 
 ## Environment Variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `AWS_ACCOUNT_ID` | Yes | - | AWS account ID |
-| `DYNAMODB_KMS_ALIAS` | Yes | - | KMS alias for DynamoDB encryption |
-| `LOG_LEVEL` | No | `INFO` | Logging level |
-| `FROM_EMAIL` | No | `noreply@xomper.com` | SES sender address |
+| Variable             | Required | Default                      | Description                       |
+| -------------------- | -------- | ---------------------------- | --------------------------------- |
+| `AWS_ACCOUNT_ID`     | Yes      | -                            | AWS account ID                    |
+| `DYNAMODB_KMS_ALIAS` | Yes      | -                            | KMS alias for DynamoDB encryption |
+| `LOG_LEVEL`          | No       | `INFO`                       | Logging level                     |
+| `FROM_EMAIL`         | No       | `noreply@xomper.xomware.com` | SES sender address                |
 
 ## SSM Parameters
 
-| Key | Description |
-|-----|-------------|
-| `/xomper/aws/ACCESS_KEY` | AWS access key (encrypted) |
-| `/xomper/aws/SECRET_KEY` | AWS secret key (encrypted) |
+| Key                          | Description                    |
+| ---------------------------- | ------------------------------ |
+| `/xomper/aws/ACCESS_KEY`     | AWS access key (encrypted)     |
+| `/xomper/aws/SECRET_KEY`     | AWS secret key (encrypted)     |
 | `/xomper/api/API_SECRET_KEY` | JWT signing secret (encrypted) |
 
 ## Handler Pattern
@@ -140,14 +154,14 @@ The `@handle_errors` decorator catches all exceptions, logs with sensitive data 
 
 Custom exception hierarchy in `errors.py`:
 
-| Exception | HTTP Status |
-|-----------|-------------|
-| `ValidationError` | 400 |
-| `AuthorizationError` | 401 |
-| `NotFoundError` | 404 |
-| `DynamoDBError` | 500 |
-| `EmailError` | 500 |
-| `SleeperAPIError` | 502 |
+| Exception            | HTTP Status |
+| -------------------- | ----------- |
+| `ValidationError`    | 400         |
+| `AuthorizationError` | 401         |
+| `NotFoundError`      | 404         |
+| `DynamoDBError`      | 500         |
+| `EmailError`         | 500         |
+| `SleeperAPIError`    | 502         |
 
 ## Deployment
 
@@ -163,6 +177,7 @@ Lambda naming convention: `xomper-{function-name}` (underscores become hyphens)
 ## Dependencies
 
 See `requirements.txt`. Key packages:
+
 - `PyJWT` - JWT token handling
 - `pydantic` - Data validation
 - `requests` - HTTP client (Sleeper API)

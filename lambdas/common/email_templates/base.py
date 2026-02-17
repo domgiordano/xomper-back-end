@@ -56,7 +56,7 @@ def generate_footer() -> str:
         </tr>
         <tr>
             <td align="center" style="padding: 8px 0; font-family: {FONT_BODY}; font-size: 12px; color: {TEXT_MUTED};">
-                <a href="{XOMPER_URL}" style="color: {TEXT_MUTED}; text-decoration: none;">xomper.com</a>
+                <a href="{XOMPER_URL}" style="color: {TEXT_MUTED}; text-decoration: none;">xomper.xomware.com</a>
                 &nbsp;&middot;&nbsp; Fantasy Football
             </td>
         </tr>
